@@ -91,7 +91,7 @@ public class HuffProcessor {
 				pq.add(new HuffNode(index,freq[index],null,null));
 			}
 		}
-
+		
 		while (pq.size() > 1) {
 		    HuffNode left = pq.remove();
 		    HuffNode right = pq.remove();
@@ -99,6 +99,9 @@ public class HuffProcessor {
 		    // left.weight+right.weight and left, right subtrees
 		    HuffNode t = new HuffNode(0, left.myWeight + right.myWeight, left, right);   
 		    pq.add(t);
+		    if(myDebugLevel >= DEBUG_HIGH) {
+		    	System.out.printf("pq cerated with %d nodes\n", pq.size());
+		    }
 		}
 		HuffNode root = pq.remove();
 		return root;
@@ -110,25 +113,26 @@ public class HuffProcessor {
 	 * @return String array representing compressed pathways
 	 */
 	private String[] makeCodingsFromTree(HuffNode root) {
-		Map<Integer, String> out = new TreeMap<>();
-		codingHelper(root, out, "");
-		return out.values().toArray(new String[0]);
+		String[] encodings = new String[ALPH_SIZE + 1];
+		codingHelper(root, "", encodings);
+		return encodings;
 	}
 	
-	private void codingHelper(HuffNode node, Map<Integer, String> out, String visited) {
-		if (node == null) {
+	private void codingHelper(HuffNode root, String path, String[] encodings) {
+		if (root == null) {
+			return;
+		}
+		// if root is leaf node, store encoding in String array
+		if (root.myLeft == null && root.myRight == null) {
+			encodings[root.myValue] = path;
+			if(myDebugLevel >= DEBUG_HIGH) {
+				System.out.printf("encoding for %d is %s\n", root.myValue, path);
+			}
 			return;
 		}
 
-		boolean leftExists = node.myLeft != null;
-		boolean rightExists = node.myRight != null;
-
-		if (!leftExists && !rightExists) {
-			out.put(node.myValue, visited);
-		}
-
-		codingHelper(node.myLeft, out, visited + "0");
-		codingHelper(node.myRight, out, visited + "1");
+		codingHelper(root.myLeft, path + "0", encodings);
+		codingHelper(root.myRight, path + "1", encodings);
 	}
 	
 	/**
