@@ -61,7 +61,7 @@ public class HuffProcessor {
 	 * @param in bit-sequence representing the tree
 	 * @return integer array containing frequencies of each 8-bit character/chunk in the file being compressed
 	 */
-	public int[] readForCounts(BitInputStream in) {
+	private int[] readForCounts(BitInputStream in) {
 		//Create the array of size 257
 		int[] freq = new int[ALPH_SIZE + 1];
 		//Set to indicate one occurrence of PSEUDO_EOS
@@ -81,7 +81,7 @@ public class HuffProcessor {
 	 * @param integer array containing bit frequencies
 	 * @return HuffNode representing the root of the encoding tree
 	 */
-	public HuffNode makeTreeFromCounts(int[] freq) {
+	private HuffNode makeTreeFromCounts(int[] freq) {
 		
 		PriorityQueue<HuffNode> pq = new PriorityQueue<>();
 		
@@ -109,13 +109,13 @@ public class HuffProcessor {
 	 * @param HuffNode representing root of Huffman Tree
 	 * @return String array representing compressed pathways
 	 */
-	public String[] makeCodingsFromTree(HuffNode root) {
+	private String[] makeCodingsFromTree(HuffNode root) {
 		Map<Integer, String> out = new TreeMap<>();
 		codingHelper(root, out, "");
 		return out.values().toArray(new String[0]);
 	}
 	
-	public void codingHelper(HuffNode node, Map<Integer, String> out, String visited) {
+	private void codingHelper(HuffNode node, Map<Integer, String> out, String visited) {
 		if (node == null) {
 			return;
 		}
@@ -135,7 +135,7 @@ public class HuffProcessor {
 	 * Writes out the tree
 	 * @param HuffNode representing root of Huffman Tree, out bit-sequence representing the tree
 	 */
-	public void writeHeader(HuffNode root, BitOutputStream out) {
+	private void writeHeader(HuffNode root, BitOutputStream out) {
 				HuffNode left = root.myLeft;
 				HuffNode right = root.myRight;
 				// if node is a leaf, write 1 bit of 1 and the 9-bit sequence stored in the node
@@ -151,7 +151,7 @@ public class HuffProcessor {
 				}
 	}
 	
-	public void writeCompressedBits(String[] encodings, BitInputStream in, BitOutputStream out) {
+	private void writeCompressedBits(String[] encodings, BitInputStream in, BitOutputStream out) {
 		while(true) {
 			int bits = in.readBits(BITS_PER_WORD);
 			if(bits == -1) break;
