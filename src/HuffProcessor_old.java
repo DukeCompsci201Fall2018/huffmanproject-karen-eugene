@@ -1,7 +1,3 @@
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.TreeMap;
-
 /**
  * Although this class has a history of several years,
  * it is starting from a blank-slate, new and clean implementation
@@ -45,123 +41,13 @@ public class HuffProcessor {
 	 */
 	public void compress(BitInputStream in, BitOutputStream out){
 
-		int[] counts = readForCounts(in);
-		HuffNode root = makeTreeFromCounts(counts);
-		String[] codings = makeCodingsFromTree(root);
-		
-		out.writeBits(BITS_PER_INT, HUFF_TREE);
-		writeHeader(root,out);
-		
-		in.reset();
-		writeCompressedBits(codings,in,out);
+		while (true){
+			int val = in.readBits(BITS_PER_WORD);
+			if (val == -1) break;
+			out.writeBits(BITS_PER_WORD, val);
+		}
 		out.close();
 	}
-	
-	/**
-	 * @param in bit-sequence representing the tree
-	 * @return integer array containing frequencies of each 8-bit character/chunk in the file being compressed
-	 */
-	public int[] readForCounts(BitInputStream in) {
-		//Create the array of size 257
-		int[] freq = new int[ALPH_SIZE + 1];
-		//Set to indicate one occurrence of PSEUDO_EOS
-		freq[PSEUDO_EOF] = 1;
-		
-		while(true) {
-			//Read 8 bit chunks while there is still input to read
-			int bits = in.readBits(BITS_PER_WORD);
-			if(bits == -1) break;
-			freq[bits]++;
-		}
-		return freq;
-	}
-	
-	/**
-	 * Makes tree from frequencies of bits
-	 * @param integer array containing bit frequencies
-	 * @return HuffNode representing the root of the encoding tree
-	 */
-	public HuffNode makeTreeFromCounts(int[] freq) {
-		
-		PriorityQueue<HuffNode> pq = new PriorityQueue<>();
-		
-		for(int index = 0; index < freq.length; index++) {
-			// only add nodes to the pq for 8-bit values that occur (i.e. have freq >= 1)
-			if(freq[index] > 0) {
-				pq.add(new HuffNode(index,freq[index],null,null));
-			}
-		}
-
-		while (pq.size() > 1) {
-		    HuffNode left = pq.remove();
-		    HuffNode right = pq.remove();
-		    // create new HuffNode t with weight from
-		    // left.weight+right.weight and left, right subtrees
-		    HuffNode t = new HuffNode(0, left.myWeight + right.myWeight, left, right);   
-		    pq.add(t);
-		}
-		HuffNode root = pq.remove();
-		return root;
-	}
-	
-	/**
-	 * Makes compressed code from Huffman Tree
-	 * @param HuffNode representing root of Huffman Tree
-	 * @return String array representing compressed pathways
-	 */
-	public String[] makeCodingsFromTree(HuffNode root) {
-		Map<Integer, String> out = new TreeMap<>();
-		codingHelper(root, out, "");
-		return out.values().toArray(new String[0]);
-	}
-	
-	public void codingHelper(HuffNode node, Map<Integer, String> out, String visited) {
-		if (node == null) {
-			return;
-		}
-
-		boolean leftExists = node.myLeft != null;
-		boolean rightExists = node.myRight != null;
-
-		if (!leftExists && !rightExists) {
-			out.put(node.myValue, visited);
-		}
-
-		codingHelper(node.myLeft, out, visited + "0");
-		codingHelper(node.myRight, out, visited + "1");
-	}
-	
-	/**
-	 * Writes out the tree
-	 * @param HuffNode representing root of Huffman Tree, out bit-sequence representing the tree
-	 */
-	public void writeHeader(HuffNode root, BitOutputStream out) {
-				HuffNode left = root.myLeft;
-				HuffNode right = root.myRight;
-				// if node is a leaf, write 1 bit of 1 and the 9-bit sequence stored in the node
-				if(left == null && right == null) {
-					out.writeBits(1, 1);
-					out.writeBits(BITS_PER_WORD + 1, root.myValue);
-				}
-				// write 1 bit of 0 and make two recursive calls if node is internal
-				else {
-					out.writeBits(1, 0);
-					writeHeader(left, out);
-					writeHeader(right, out);
-				}
-	}
-	
-	public void writeCompressedBits(String[] encodings, BitInputStream in, BitOutputStream out) {
-		while(true) {
-			int bits = in.readBits(BITS_PER_WORD);
-			if(bits == -1) break;
-			String encoding = encodings[bits];
-			out.writeBits(encoding.length(), Integer.parseInt(encoding, 2));
-		}
-		String encoding = encodings[PSEUDO_EOF];
-		out.writeBits(encoding.length(), Integer.parseInt(encoding, 2));
-	}
-	
 	/**
 	 * Decompresses a file. Output file must be identical bit-by-bit to the
 	 * original.
